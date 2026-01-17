@@ -699,53 +699,33 @@
             unsubscribeUser = onSnapshot(doc(db, COLLECTION_NAME, name), (docSnap) => {
                 if (docSnap.exists()) {
                     const newData = docSnap.data();
+                    
+                    // 【App 組件狀態更新】
+                    // 這裡的 userProgress 包含了錯題本、收藏本、與闖關進度
+                    const userProgress = {
+                        quizProgress: newData.quizProgress || {},
+                        mistakeBank: newData.mistakeBank || [],
+                        favoriteBank: newData.favoriteBank || []
+                    };
+                    
                     currentUserDataCache = newData;
 
-                    // --- 同步邏輯 (關鍵修改) ---
-                    // 當收到雲端資料時，立即更新本地 quizState 中的答案與分數
-                    // 這樣當 A 裝置作答後，B 裝置的 quizState 就會同步更新
-                    if (window.quizState) {
-                        let remoteKey = '';
-                        // 判斷目前是哪種模式，對應 Firebase 中的 Key
-                        if (window.quizState.mode === 'standard') {
-                            remoteKey = 'standardProgress';
-                        } else if (['speed', 'mistake', 'favorite'].includes(window.quizState.mode)) {
-                            remoteKey = 'waterfallProgress_' + window.quizState.mode;
-                        }
-
-                        if (remoteKey && newData[remoteKey]) {
-                            const remoteState = newData[remoteKey];
-                            
-                            // 將雲端的作答紀錄 (answers)、分數 (score)、鎖定狀態 (locked) 合併回本地狀態
-                            window.quizState.answers = remoteState.answers || {};
-                            window.quizState.score = remoteState.score || 0;
-                            window.quizState.locked = remoteState.locked || {};
-                            // 注意：我們通常不同步 currentIndex，避免 B 裝置使用者閱讀到一半被強制跳轉
-                        }
-                    }
-
-                    // --- 觸發 UI 更新 ---
-
-                    // 1. Dashboard (儀表板) 更新
+                    // 1. 更新 Dashboard (儀表板) 
                     if(window.renderLevelGrid) window.renderLevelGrid(); 
                     if(window.updateDashboardTools) window.updateDashboardTools();
 
-                    // 2. 瀑布流模式 (Waterfall Mode) 更新
+                    // 2. 【傳遞給 WaterfallQuizView】(瀑布流模式)
+                    // 如果瀑布流畫面是開啟的，且我們正在看「收藏」或「錯題」，則即時重新渲染列表
                     const wfScreen = document.getElementById('waterfall-screen');
-                    if (wfScreen && wfScreen.style.display !== 'none' && window.quizState && window.quizState.mode !== 'standard') {
-                        if (window.syncWaterfallRealtime) {
-                            const userProgress = {
-                                mistakeBank: newData.mistakeBank || [],
-                                favoriteBank: newData.favoriteBank || []
-                            };
-                            window.syncWaterfallRealtime(userProgress);
-                        }
+                    if (wfScreen && wfScreen.style.display !== 'none' && window.quizState && window.quizState.mode !== 'speed') {
+                        if (window.syncWaterfallRealtime) window.syncWaterfallRealtime(userProgress);
                     }
                     
-                    // 3. 標準模式 (Standard Mode) 更新
+                    // 3. 【傳遞給 闖關模式】(標準測驗模式)
+                    // 如果標準測驗畫面是開啟的，即時更新「收藏」按鈕的狀態
                     const quizContent = document.getElementById('quiz-content');
-                    if (quizContent && quizContent.style.display !== 'none' && window.quizState && window.quizState.mode === 'standard') {
-                        if (window.syncStandardRealtime) window.syncStandardRealtime();
+                    if (quizContent && quizContent.style.display !== 'none') {
+                        if (window.syncStandardRealtime) window.syncStandardRealtime(userProgress);
                     }
 
                 } else {
@@ -1142,21 +1122,10 @@
         }
 
         // 新增：Standard Quiz 即時同步函數
-        window.syncStandardRealtime = function() {
+        window.syncStandardRealtime = function(userProgress) {
             if(!currentQuizData[quizState.currentIndex]) return;
             const currentId = currentQuizData[quizState.currentIndex].id;
             updateStandardFavoriteUI(currentId);
-
-            // 檢查當前題目是否已在遠端被作答
-            const isAnsweredRemote = quizState.answers[currentId] !== undefined;
-            // 檢查本地畫面是否已顯示解析 (代表已作答)
-            const explanationBox = document.getElementById('explanation');
-            const isAnsweredLocal = explanationBox && explanationBox.style.display === 'block';
-
-            // 如果遠端已作答，但本地還是未作答狀態，則刷新題目顯示 (這會 disable 按鈕並顯示解析)
-            if (isAnsweredRemote && !isAnsweredLocal) {
-                loadStandardQuestion();
-            }
         }
 
         function loadStandardQuestion() {
@@ -1284,10 +1253,10 @@
             
             // 重新渲染畫面
             updateWaterfallStats();
-            // 為了不讓使用者捲動位置跑掉，這裡先記錄位置
-            const scrollPos = window.scrollY;
+            // 這裡可以做更精細的 DOM 操作，為求穩健直接重繪列表，
+            // 雖然會影響捲動位置，但確保了資料絕對同步。
+            // 實務上 React 會透過 Virtual DOM 處理，Vanilla JS 這裡做全刷新。
             renderWaterfallUI();
-            window.scrollTo(0, scrollPos);
         }
 
         function renderWaterfallUI() {

@@ -692,44 +692,19 @@
         }
 
         // 2. 用戶監聽 (暴露給外部調用)
-        // 這裡實作了「App 組件」的狀態管理與「傳遞給 WaterfallQuizView」的概念
         window.startFirebaseUserSession = function(name) {
             if (unsubscribeUser) unsubscribeUser();
             
             unsubscribeUser = onSnapshot(doc(db, COLLECTION_NAME, name), (docSnap) => {
                 if (docSnap.exists()) {
-                    const newData = docSnap.data();
-                    
-                    // 【App 組件狀態更新】
-                    // 這裡的 userProgress 包含了錯題本、收藏本、與闖關進度
-                    const userProgress = {
-                        quizProgress: newData.quizProgress || {},
-                        mistakeBank: newData.mistakeBank || [],
-                        favoriteBank: newData.favoriteBank || []
-                    };
-                    
-                    currentUserDataCache = newData;
-
-                    // 1. 更新 Dashboard (儀表板) 
-                    if(window.renderLevelGrid) window.renderLevelGrid(); 
-                    if(window.updateDashboardTools) window.updateDashboardTools();
-
-                    // 2. 【傳遞給 WaterfallQuizView】(瀑布流模式)
-                    // 如果瀑布流畫面是開啟的，且我們正在看「收藏」或「錯題」，則即時重新渲染列表
-                    const wfScreen = document.getElementById('waterfall-screen');
-                    if (wfScreen && wfScreen.style.display !== 'none' && window.quizState && window.quizState.mode !== 'speed') {
-                        if (window.syncWaterfallRealtime) window.syncWaterfallRealtime(userProgress);
-                    }
-                    
-                    // 3. 【傳遞給 闖關模式】(標準測驗模式)
-                    // 如果標準測驗畫面是開啟的，即時更新「收藏」按鈕的狀態
-                    const quizContent = document.getElementById('quiz-content');
-                    if (quizContent && quizContent.style.display !== 'none') {
-                        if (window.syncStandardRealtime) window.syncStandardRealtime(userProgress);
-                    }
-
+                    currentUserDataCache = docSnap.data();
                 } else {
                     currentUserDataCache = {};
+                }
+                // 觸發 UI 刷新
+                if(document.getElementById('level-screen').style.display !== 'none') {
+                    window.renderLevelGrid && window.renderLevelGrid(); 
+                    window.updateDashboardTools && window.updateDashboardTools();
                 }
             }, (error) => {
                 console.error("User Data Sync Error:", error);
@@ -833,12 +808,10 @@
             }
         }
 
-        // 修改：嚴格執行 Local Storage 讀取，並要求使用者自行輸入
         function getAPIKey() {
             let key = localStorage.getItem('gemini_api_key');
             if (!key) {
-                // 這裡的 key 僅儲存於使用者的瀏覽器 (Local Storage)，不會上傳至 Firebase
-                key = prompt("請輸入您的 Google Gemini API Key 以啟用 AI 書僮功能：\n(金鑰僅儲存於您的本機瀏覽器，不會上傳至雲端)");
+                key = prompt("請輸入您的 Google Gemini API Key 以啟用 AI 書僮功能：");
                 if (key) {
                     localStorage.setItem('gemini_api_key', key.trim());
                     return key.trim();
@@ -1121,13 +1094,6 @@
             loadStandardQuestion();
         }
 
-        // 新增：Standard Quiz 即時同步函數
-        window.syncStandardRealtime = function(userProgress) {
-            if(!currentQuizData[quizState.currentIndex]) return;
-            const currentId = currentQuizData[quizState.currentIndex].id;
-            updateStandardFavoriteUI(currentId);
-        }
-
         function loadStandardQuestion() {
             const qData = currentQuizData[quizState.currentIndex];
             if(!qData) return finishStandardQuiz();
@@ -1242,31 +1208,9 @@
             renderWaterfallUI();
         }
 
-        // 新增：Waterfall View 即時同步函數
-        window.syncWaterfallRealtime = function(userProgress) {
-            // 如果是錯題本或收藏本模式，需要更新題目列表 (因為可能在別處新增/刪除了題目)
-            if (quizState.mode === 'mistake') {
-                quizState.qIds = userProgress.mistakeBank;
-            } else if (quizState.mode === 'favorite') {
-                quizState.qIds = userProgress.favoriteBank;
-            }
-            
-            // 重新渲染畫面
-            updateWaterfallStats();
-            // 這裡可以做更精細的 DOM 操作，為求穩健直接重繪列表，
-            // 雖然會影響捲動位置，但確保了資料絕對同步。
-            // 實務上 React 會透過 Virtual DOM 處理，Vanilla JS 這裡做全刷新。
-            renderWaterfallUI();
-        }
-
         function renderWaterfallUI() {
-            // 注意：不要在此處呼叫 hideAllScreens，否則即時更新時會導致畫面閃爍或重置
-            const wfScreen = document.getElementById('waterfall-screen');
-            if(wfScreen.style.display === 'none') {
-                 hideAllScreens();
-                 wfScreen.style.display = 'block';
-            }
-            
+            hideAllScreens();
+            document.getElementById('waterfall-screen').style.display = 'block';
             updateWaterfallStats();
             
             const list = document.getElementById('waterfall-list');
@@ -1303,7 +1247,7 @@
                 card.innerHTML = actionsHtml + qTextHtml + imgHtml + optionsHtml + expHtml;
                 list.appendChild(card);
             });
-            // 移除 window.scrollTo(0, 0) 以避免同步時畫面跳回頂部
+            window.scrollTo(0, 0);
         }
 
         function handleWaterfallAnswer(qId, option) {

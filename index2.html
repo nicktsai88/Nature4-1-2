@@ -6,18 +6,6 @@
     <title>第4冊 1-1 質量守恆定律</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    
-    <!-- Import Map：Firebase 模組 -->
-    <script type="importmap">
-    {
-      "imports": {
-        "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
-        "firebase/firestore": "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js",
-        "firebase/auth": "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js"
-      }
-    }
-    </script>
-
     <style>
         :root {
             /* 配色系統 */
@@ -60,30 +48,6 @@
 
         h1, h2, h3 { text-align: center; color: var(--text-color); }
         h1 { color: var(--primary-color); text-shadow: 1px 1px 2px rgba(0,0,0,0.1); margin-top: 0;}
-
-        /* --- Firebase 狀態指示器 (修改：移至右上方) --- */
-        #firebase-status {
-            position: fixed;
-            top: 15px;      /* 稍微往下留一點空間 */
-            right: 20px;    /* 改為靠右 */
-            z-index: 20002; /* 確保在最上層，比 Modal 高 */
-            background: rgba(0,0,0,0.7);
-            color: #fff;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 0.85em;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            backdrop-filter: blur(5px);
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-        }
-        .status-dot {
-            width: 8px; height: 8px; border-radius: 50%;
-            background-color: #ccc;
-        }
-        .status-dot.connected { background-color: #2ecc71; box-shadow: 0 0 5px #2ecc71; }
-        .status-dot.error { background-color: #e74c3c; }
 
         /* --- 音樂播放器固定列 --- */
         #music-player-bar {
@@ -137,7 +101,7 @@
         .volume-slider { width: 60px; accent-color: var(--primary-color); cursor: pointer;}
         
         #bg-audio { display: none; }
-        .player-right { flex: 0 0 auto; display: flex; justify-content: flex-end; align-items: center; width: 40px; } /* 預留寬度平衡版面 */
+        .player-right { flex: 0 0 auto; display: flex; justify-content: flex-end; align-items: center; }
 
         /* --- 容器通用 --- */
         .container-box {
@@ -303,9 +267,10 @@
         .modal-close { position: absolute; top: -15px; right: -15px; background: red; color: white; width: 30px; height: 30px; border-radius: 50%; border: 2px solid white; cursor: pointer; font-weight: bold;}
 
         /* --- AI 書僮 (AI Tutor) CSS --- */
+        /* 修改點：AI 書僮按鈕樣式改為 Header 內嵌式 */
         .ai-fab {
             position: relative; 
-            /* 移除原本的固定定位，改為 flex item */
+            top: auto; right: auto; bottom: auto; left: auto;
             width: 40px; height: 40px;
             background: var(--ai-header-bg); color: white;
             border-radius: 50%;
@@ -313,10 +278,11 @@
             font-size: 1.2em; cursor: pointer;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
             z-index: 10001; transition: transform 0.3s;
-            margin-left: 10px; /* 與音量條保持距離 */
+            margin-left: 10px;
         }
         .ai-fab:hover { transform: scale(1.1); }
 
+        /* 修改點：AI 視窗從 Header 下方展開 */
         .ai-chat-window {
             position: fixed; top: 75px; right: 20px;
             width: 350px; height: 500px;
@@ -326,7 +292,7 @@
             box-shadow: 0 5px 25px rgba(0,0,0,0.2);
             display: flex; flex-direction: column;
             z-index: 10001; overflow: hidden;
-            display: none;
+            display: none; /* 預設隱藏 */
             border: 1px solid #ddd;
         }
         
@@ -384,9 +350,9 @@
             .player-left { display: none; }
             body { padding-top: 90px; }
 
-            /* AI Chat Mobile */
+            /* AI Chat Mobile - 保持在下方 */
             .ai-chat-window {
-                position: fixed;
+                position: fixed; /* Reset position for mobile */
                 top: 75px; 
                 right: 5%; left: 5%;
                 width: 90%; 
@@ -400,12 +366,6 @@
     </style>
 </head>
 <body>
-
-    <!-- 修改：Firebase 狀態指示器 (移到右上角) -->
-    <div id="firebase-status">
-        <div id="status-dot" class="status-dot"></div>
-        <span id="status-text">連線中...</span>
-    </div>
 
     <!-- HTML5 音樂播放器 -->
     <div id="music-player-bar">
@@ -428,15 +388,15 @@
                 <div class="volume-container">
                     <input type="range" id="volume-slider" class="volume-slider" min="0" max="1" step="0.1" value="0.3" oninput="setVolume(this.value)">
                 </div>
-                
-                <!-- 修改：將 AI 書僮按鈕移至此處 (音樂控制介面的右邊) -->
-                <div class="ai-fab" onclick="toggleAIChat()">🤖</div>
             </div>
         </div>
         
-        <!-- 修改：清空 player-right 但保留結構以維持排版 -->
-        <div class="player-right"></div>
+        <div class="player-right">
+            <!-- 修改點：將 AI 書僮按鈕移至此處 -->
+            <div class="ai-fab" onclick="toggleAIChat()">🤖</div>
+        </div>
         
+        <!-- 隱藏的 Audio 標籤 -->
         <audio id="bg-audio"></audio>
     </div>
 
@@ -610,167 +570,16 @@
         </div>
     </div>
 
-    <!-- 整合後的 Firebase Logic Script -->
-    <script type="module">
-        import { initializeApp } from "firebase/app";
-        import { getFirestore, collection, doc, setDoc, updateDoc, arrayUnion, onSnapshot, getDoc } from "firebase/firestore";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "firebase/auth";
-
-        // 2. 請填入您的 Firebase 設定
-        const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT_ID.appspot.com",
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            appId: "YOUR_APP_ID"
-        };
-
-        let app, db, auth;
-        let isFirebaseReady = false;
-        let globalUsersList = [];
-        let currentUserDataCache = {}; 
-        let unsubscribeUser = null;
-
-        // Collection Name 提取邏輯
-        const APP_PREFIX = 'Nature4-1-2_';
-        const COLLECTION_NAME = APP_PREFIX.replace(/_$/, ''); 
-        const DOC_GLOBAL = 'global_config';
-
-        // 初始化 Firebase
-        try {
-            app = initializeApp(firebaseConfig);
-            db = getFirestore(app);
-            auth = getAuth(app);
-            
-            signInAnonymously(auth).then(() => {
-                console.log("Firebase Anonymous Auth Success");
-            }).catch((error) => {
-                console.error("Auth Error", error);
-                updateStatus(false);
-            });
-
-            onAuthStateChanged(auth, (user) => {
-                if (user) {
-                    isFirebaseReady = true;
-                    updateStatus(true);
-                    setupGlobalListener(); 
-                } else {
-                    isFirebaseReady = false;
-                    updateStatus(false);
-                }
-            });
-        } catch (e) {
-            console.error("Firebase Init Error:", e);
-            alert("Firebase 初始化失敗，請檢查 Config 設定。");
-        }
-
-        function updateStatus(connected) {
-            const dot = document.getElementById('status-dot');
-            const text = document.getElementById('status-text');
-            if(connected) {
-                dot.className = 'status-dot connected';
-                text.innerText = '雲端已連線';
-            } else {
-                dot.className = 'status-dot error';
-                text.innerText = '連線中斷';
-            }
-        }
-
-        // --- Firebase Functions 暴露至 Window ---
-
-        // 1. 全局監聽
-        function setupGlobalListener() {
-            onSnapshot(doc(db, COLLECTION_NAME, DOC_GLOBAL), (docSnap) => {
-                if (docSnap.exists()) {
-                    globalUsersList = docSnap.data().users || [];
-                    window.updateQuickLoginUI && window.updateQuickLoginUI(globalUsersList);
-                } else {
-                    setDoc(doc(db, COLLECTION_NAME, DOC_GLOBAL), { users: [] }, { merge: true });
-                }
-            });
-        }
-
-        // 2. 用戶監聽 (暴露給外部調用)
-        window.startFirebaseUserSession = function(name) {
-            if (unsubscribeUser) unsubscribeUser();
-            
-            unsubscribeUser = onSnapshot(doc(db, COLLECTION_NAME, name), (docSnap) => {
-                if (docSnap.exists()) {
-                    currentUserDataCache = docSnap.data();
-                } else {
-                    currentUserDataCache = {};
-                }
-                // 觸發 UI 刷新
-                if(document.getElementById('level-screen').style.display !== 'none') {
-                    window.renderLevelGrid && window.renderLevelGrid(); 
-                    window.updateDashboardTools && window.updateDashboardTools();
-                }
-            }, (error) => {
-                console.error("User Data Sync Error:", error);
-            });
-        }
-
-        // 3. 資料讀寫介面
-        window.getData = function(key) {
-            const fieldName = key.split('_').pop(); 
-            return (currentUserDataCache && currentUserDataCache[fieldName]) || null;
-        }
-
-        window.saveData = async function(key, value) {
-            const fieldName = key.split('_').pop();
-            // 更新本地緩存
-            currentUserDataCache[fieldName] = value;
-            // 寫入雲端
-            if (isFirebaseReady && window.userName) {
-                try {
-                    await setDoc(doc(db, COLLECTION_NAME, window.userName), { [fieldName]: value }, { merge: true });
-                } catch (e) {
-                    console.error("Save Error:", e);
-                }
-            }
-        }
-        
-        // 4. 用戶管理函式
-        window.firebaseDeleteUser = async function(name) {
-            if(!isFirebaseReady) return alert("請先連線至網路");
-            try {
-                const globalRef = doc(db, COLLECTION_NAME, DOC_GLOBAL);
-                const snap = await getDoc(globalRef);
-                if(snap.exists()) {
-                    let users = snap.data().users || [];
-                    const newUsers = users.filter(u => u.name !== name);
-                    await updateDoc(globalRef, { users: newUsers });
-                }
-                alert(`研究員 ${name} 已刪除`);
-            } catch(e) {
-                console.error("Delete Error", e);
-                alert("刪除失敗");
-            }
-        };
-
-        window.firebaseSaveUserToList = async function(name, avatar) {
-            if(!isFirebaseReady) return;
-            const userObj = { name: name, avatar: avatar };
-            const exists = globalUsersList.some(u => u.name === name);
-            if(!exists) {
-                await updateDoc(doc(db, COLLECTION_NAME, DOC_GLOBAL), {
-                    users: arrayUnion(userObj)
-                });
-            }
-        };
-    </script>
-
     <script>
         // --- 設定區塊 ---
         const MUSIC_CONFIG = {
             username: 'nicktsai88',
             repo: 'Music',
-            folder: '' 
+            folder: '' // 若在根目錄請留空，例如: ''
         };
 
         const LEVEL_CONFIG = [20, 20, 20];
-        const APP_PREFIX = 'Nature4-1-2_'; 
+        const APP_PREFIX = 'Nature4-1-2_';
         
         // 音樂變數
         let audioPlayer = document.getElementById('bg-audio');
@@ -779,11 +588,15 @@
         let isMusicReady = false;
         
         let allQuestions = [], currentQuizData = [];
-        window.userName = ""; 
-        let currentAvatar = "Chris.png";
+        let userName = "", currentAvatar = "Chris.png";
         
         let quizState = {
-            mode: 'standard', level: 1, score: 0, currentIndex: 0, answers: {}, locked: {}   
+            mode: 'standard', // standard, speed, mistake, favorite
+            level: 1,
+            score: 0,
+            currentIndex: 0,
+            answers: {}, 
+            locked: {}   
         };
 
         const audioCorrect = new Audio('sounds/correct.mp3'); audioCorrect.volume = 0.4;
@@ -792,8 +605,9 @@
         // --- 初始化 ---
         document.addEventListener('DOMContentLoaded', () => {
             fetchMusicFromGitHub(); // 初始化音樂
+            
             fetch('questions.json').then(res => res.json())
-                .then(data => { allQuestions = data; })
+                .then(data => { allQuestions = data; renderQuickLogin(); })
                 .catch(e => console.error("Error loading questions:", e));
         });
 
@@ -804,6 +618,7 @@
                 win.style.display = 'none';
             } else {
                 win.style.display = 'flex';
+                // 檢查 Key
                 getAPIKey(); 
             }
         }
@@ -817,7 +632,7 @@
                     return key.trim();
                 } else {
                     alert("未輸入 API Key，AI 功能將無法使用。");
-                    toggleAIChat(); 
+                    toggleAIChat(); // 關閉視窗
                     return null;
                 }
             }
@@ -845,8 +660,13 @@
             const apiKey = getAPIKey();
             if (!apiKey) return;
 
-            input.value = ''; input.disabled = true; btn.disabled = true;
+            // UI 更新
+            input.value = '';
+            input.disabled = true;
+            btn.disabled = true;
             appendMessage(text, 'user');
+            
+            // 載入中
             const loadingId = appendMessage('輸入中...', 'ai', true);
 
             try {
@@ -862,15 +682,23 @@
                     appendMessage("[系統] API Key 無效，已清除。請重新開啟視窗輸入。", 'ai');
                 }
             } finally {
-                input.disabled = false; btn.disabled = false; input.focus();
+                input.disabled = false;
+                btn.disabled = false;
+                input.focus();
             }
         }
 
         async function callGeminiAPI(userMessage, apiKey) {
             const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+            
             const payload = {
-                contents: [{ role: "user", parts: [{ text: userMessage }] }],
-                systemInstruction: { parts: [{ text: "你是一個 AI 學習小幫手。針對使用者的問題，回答必須簡明扼要，直接切入核心，並做簡單的解析。一律使用繁體中文。" }] }
+                contents: [{
+                    role: "user",
+                    parts: [{ text: userMessage }]
+                }],
+                systemInstruction: {
+                    parts: [{ text: "你是一個 AI 學習小幫手。針對使用者的問題，回答必須簡明扼要，直接切入核心，並做簡單的解析。一律使用繁體中文。" }]
+                }
             };
 
             const response = await fetch(url, {
@@ -879,9 +707,13 @@
                 body: JSON.stringify(payload)
             });
 
-            if (!response.ok) throw new Error(`API Error: ${response.status}`);
+            if (!response.ok) {
+                throw new Error(`API Error: ${response.status}`);
+            }
+
             const data = await response.json();
-            return data.candidates?.[0]?.content?.parts?.[0]?.text || "抱歉，我無法回答這個問題。";
+            const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            return text || "抱歉，我無法回答這個問題。";
         }
 
         function appendMessage(text, sender, isLoading = false) {
@@ -889,10 +721,11 @@
             const div = document.createElement('div');
             div.className = `msg-bubble ${sender === 'user' ? 'msg-user' : 'msg-ai'}`;
             div.innerText = text;
-            div.id = 'msg-' + Date.now();
+            const id = 'msg-' + Date.now();
+            div.id = id;
             container.appendChild(div);
             container.scrollTop = container.scrollHeight;
-            return div.id;
+            return id;
         }
 
         function removeMessage(id) {
@@ -900,35 +733,43 @@
             if (el) el.remove();
         }
 
-        // --- Music Logic ---
+        // --- GitHub API 音樂讀取與播放邏輯 ---
         function fetchMusicFromGitHub() {
             const { username, repo, folder } = MUSIC_CONFIG;
             let apiUrl = `https://api.github.com/repos/${username}/${repo}/contents/${folder}`;
             
-            fetch(apiUrl).then(res => {
+            fetch(apiUrl)
+                .then(res => {
                     if (!res.ok) throw new Error("GitHub API Error");
                     return res.json();
-                }).then(data => {
-                    playlist = data.filter(file => file.name.endsWith('.mp3'))
+                })
+                .then(data => {
+                    // 過濾出 .mp3
+                    playlist = data
+                        .filter(file => file.name.endsWith('.mp3'))
                         .map(file => ({
-                            name: decodeURIComponent(file.name.replace('.mp3', '')),
+                            name: decodeURIComponent(file.name.replace('.mp3', '')), // 移除副檔名
                             url: file.download_url
                         }));
 
                     if (playlist.length > 0) {
+                        // 洗牌 (Shuffle)
                         shuffleArray(playlist);
                         isMusicReady = true;
                         updatePlayerUI();
+                        // 綁定結束事件，自動播下一首
                         audioPlayer.onended = nextTrack;
                     } else {
                         document.getElementById('track-name').innerText = "無 MP3 檔案";
                     }
-                }).catch(err => {
+                })
+                .catch(err => {
                     console.error("Music fetch error:", err);
-                    document.getElementById('track-name').innerText = "音樂載入失敗";
+                    document.getElementById('track-name').innerText = "音樂載入失敗 (請檢查設定)";
                 });
         }
 
+        // Fisher-Yates 洗牌演算法
         function shuffleArray(array) {
             for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -943,12 +784,13 @@
             updatePlayerUI();
             audioPlayer.play().then(() => {
                 document.getElementById('main-play-btn').innerText = '⏸';
-            }).catch(e => console.log("Play prevented", e));
+            }).catch(e => console.log("Play prevented by browser", e));
         }
 
         function togglePlay() {
             if (!isMusicReady) return;
             if (audioPlayer.paused) {
+                // 如果沒有 source，先載入當前
                 if(!audioPlayer.src) loadTrack(currentTrackIndex);
                 else audioPlayer.play();
                 document.getElementById('main-play-btn').innerText = '⏸';
@@ -960,6 +802,7 @@
 
         function nextTrack() {
             if (!isMusicReady) return;
+            // 隨機播放邏輯：因為已經在載入時 Shuffle 過了，這裡只要循序播放就是隨機的效果
             let nextIndex = (currentTrackIndex + 1) % playlist.length;
             loadTrack(nextIndex);
         }
@@ -970,13 +813,20 @@
             loadTrack(prevIndex);
         }
 
-        function setVolume(val) { audioPlayer.volume = val; }
-        function updatePlayerUI() {
-            if (playlist[currentTrackIndex]) document.getElementById('track-name').innerText = playlist[currentTrackIndex].name;
+        function setVolume(val) {
+            audioPlayer.volume = val;
         }
 
-        // --- App Logic ---
-        function getUserKey(key) { return APP_PREFIX + window.userName + '_' + key; }
+        function updatePlayerUI() {
+            if (playlist[currentTrackIndex]) {
+                document.getElementById('track-name').innerText = playlist[currentTrackIndex].name;
+            }
+        }
+
+
+        // --- 一般邏輯 ---
+
+        function getUserKey(key) { return APP_PREFIX + userName + '_' + key; }
 
         function selectAvatar(img, el) {
             currentAvatar = img;
@@ -984,29 +834,34 @@
             el.classList.add('selected');
         }
 
-        // 登入邏輯 (連結 Firebase)
-        async function loginAndStart() {
+        function loginAndStart() {
             const name = document.getElementById('username').value.trim();
             if(!name) return alert('請輸入代號');
-            window.userName = name;
+            userName = name;
+            saveUser();
             
-            // 觸發 Firebase 監聽 (若模組已載入)
-            if(window.firebaseSaveUserToList) await window.firebaseSaveUserToList(name, currentAvatar);
-            if(window.startFirebaseUserSession) window.startFirebaseUserSession(name);
-            
-            // 音樂自動播放
+            // 觸發播放 (符合瀏覽器互動後播放政策)
             if(isMusicReady && audioPlayer.paused) {
+                // 如果還沒設定 src (第一次播放)，設定並播放
                 if (!audioPlayer.src) loadTrack(0);
                 else audioPlayer.play();
                 document.getElementById('main-play-btn').innerText = '⏸';
             }
+
             goToDashboard();
         }
 
-        // UI 渲染介面 (由 Firebase Module 呼叫)
-        window.updateQuickLoginUI = function(users) {
+        function saveUser() {
+            let users = JSON.parse(localStorage.getItem(APP_PREFIX+'savedUsers')) || [];
+            if(!users.some(u => u.name === userName)) {
+                users.push({name: userName, avatar: currentAvatar});
+                localStorage.setItem(APP_PREFIX+'savedUsers', JSON.stringify(users));
+            }
+        }
+        
+        function renderQuickLogin() {
+            const users = JSON.parse(localStorage.getItem(APP_PREFIX+'savedUsers')) || [];
             const container = document.getElementById('quick-login-area');
-            if(!container) return;
             container.innerHTML = users.map(u => `
                 <div class="user-tag" onclick="quickLogin('${u.name}', '${u.avatar}')">
                     <img src="images/${u.avatar}" style="width:25px;height:25px;border-radius:50%;">${u.name}
@@ -1014,8 +869,6 @@
                 </div>
             `).join('');
         }
-        // 初始化時呼叫一次，避免空白 (雖然 Module 會更新)
-        function renderQuickLogin() { /* Placeholder: 邏輯移交給 window.updateQuickLoginUI */ }
 
         function quickLogin(name, av) {
             document.getElementById('username').value = name;
@@ -1026,25 +879,40 @@
         function deleteUser(name) {
             if(!confirm(`確定要刪除研究員 ${name} 的所有資料嗎？`)) return;
             if(!confirm(`再次確認：此動作無法復原！真的要刪除 ${name} 嗎？`)) return;
-            if(window.firebaseDeleteUser) window.firebaseDeleteUser(name);
+            
+            localStorage.removeItem(APP_PREFIX + name + '_mistakeBank');
+            localStorage.removeItem(APP_PREFIX + name + '_favoriteBank');
+            localStorage.removeItem(APP_PREFIX + name + '_quizHistory');
+            localStorage.removeItem(APP_PREFIX + name + '_quizProgress');
+            localStorage.removeItem(APP_PREFIX + name + '_standardProgress');
+            localStorage.removeItem(APP_PREFIX + name + '_waterfallProgress_speed');
+            localStorage.removeItem(APP_PREFIX + name + '_waterfallProgress_mistake');
+            localStorage.removeItem(APP_PREFIX + name + '_waterfallProgress_favorite');
+            
+            let users = JSON.parse(localStorage.getItem(APP_PREFIX+'savedUsers')) || [];
+            localStorage.setItem(APP_PREFIX+'savedUsers', JSON.stringify(users.filter(u => u.name !== name)));
+            renderQuickLogin();
         }
 
         function goToDashboard() {
             hideAllScreens();
             document.getElementById('level-screen').style.display = 'block';
-            document.getElementById('display-name').innerText = window.userName;
+            document.getElementById('display-name').innerText = userName;
             document.getElementById('user-avatar-display').src = "images/" + currentAvatar;
+            
+            renderLevelGrid();
+            updateDashboardTools();
         }
 
         function hideAllScreens() {
             document.querySelectorAll('.container-box').forEach(el => el.style.display = 'none');
         }
 
-        // --- Standard Quiz ---
-        window.renderLevelGrid = function() {
+        // --- 標準實驗模式 (Standard Mode) ---
+        function renderLevelGrid() {
             const grid = document.getElementById('level-grid');
             grid.innerHTML = "";
-            const progress = window.getData(getUserKey('quizProgress')) || { maxLevel: 1, scores: {} };
+            const progress = JSON.parse(localStorage.getItem(getUserKey('quizProgress'))) || { maxLevel: 1, scores: {} };
             
             LEVEL_CONFIG.forEach((_, idx) => {
                 const level = idx + 1;
@@ -1054,7 +922,9 @@
                 if (level <= progress.maxLevel) {
                     const score = progress.scores[level];
                     let icon = '🧪';
-                    if (score >= 90) icon = '⚛️'; else if (score >= 70) icon = '🔬';
+                    if (score >= 90) icon = '⚛️';
+                    else if (score >= 70) icon = '🔬';
+                    
                     btn.innerHTML = `<div class="lvl-icon">${icon}</div><div class="lvl-label">實驗${level}</div>${score !== undefined ? `<div class="lvl-score">${score}分</div>` : ''}`;
                     btn.onclick = () => startStandardQuiz(level);
                 } else {
@@ -1068,21 +938,32 @@
         function startStandardQuiz(level, forceNew = false) {
             const savedKey = getUserKey('standardProgress');
             if(!forceNew) {
-                const saved = window.getData(savedKey);
+                const saved = JSON.parse(localStorage.getItem(savedKey));
                 if(saved && saved.level === level) {
                       quizState = saved;
                       currentQuizData = allQuestions.filter(q => quizState.qIds.includes(q.id));
-                      loadStandardUI(); return;
+                      loadStandardUI();
+                      return;
                 }
             }
-            let startIdx = 0; for(let i=0; i<level-1; i++) startIdx += LEVEL_CONFIG[i];
+            
+            let startIdx = 0;
+            for(let i=0; i<level-1; i++) startIdx += LEVEL_CONFIG[i];
             let endIdx = startIdx + LEVEL_CONFIG[level-1];
+            
             quizState = {
-                mode: 'standard', level: level, score: 0, currentIndex: 0, answers: {}, locked: {},
+                mode: 'standard',
+                level: level,
+                score: 0,
+                currentIndex: 0,
+                answers: {},
+                locked: {},
                 qIds: allQuestions.slice(startIdx, endIdx).map(q => q.id)
             };
+            
             currentQuizData = allQuestions.filter(q => quizState.qIds.includes(q.id));
             if(currentQuizData.length === 0) return alert('無題目數據');
+            
             loadStandardUI();
         }
 
@@ -1098,9 +979,11 @@
             const qData = currentQuizData[quizState.currentIndex];
             if(!qData) return finishStandardQuiz();
             
-            window.saveData(getUserKey('standardProgress'), quizState);
+            localStorage.setItem(getUserKey('standardProgress'), JSON.stringify(quizState));
+
             document.getElementById('current-q-num').innerText = quizState.currentIndex + 1;
             document.getElementById('progress-bar').style.width = ((quizState.currentIndex) / currentQuizData.length * 100) + '%';
+            
             document.getElementById('question-text').innerText = qData.question;
             const imgEl = document.getElementById('question-image');
             imgEl.style.display = qData.image ? 'block' : 'none';
@@ -1108,6 +991,7 @@
 
             const list = document.getElementById('options-list');
             list.innerHTML = "";
+            
             const isAnswered = quizState.answers[qData.id] !== undefined;
             const userAns = quizState.answers[qData.id];
 
@@ -1115,6 +999,7 @@
                 const btn = document.createElement('button');
                 btn.className = 'option-btn';
                 btn.innerText = opt;
+                
                 if(isAnswered) {
                     btn.disabled = true;
                     const optCode = opt.substring(0,3);
@@ -1136,6 +1021,7 @@
                 expBox.style.display = 'none';
                 document.getElementById('next-btn').style.display = 'none';
             }
+            
             updateStandardFavoriteUI(qData.id);
         }
 
@@ -1143,34 +1029,43 @@
             quizState.answers[qData.id] = option;
             const correct = qData.answer.substring(0,3);
             const selected = option.substring(0,3);
+            
             if(selected === correct) {
-                quizState.score++; audioCorrect.play().catch(()=>{}); confetti({ particleCount: 50, origin: { y: 0.8 } });
+                quizState.score++;
+                audioCorrect.play().catch(()=>{});
+                confetti({ particleCount: 50, origin: { y: 0.8 } });
             } else {
-                audioFail.play().catch(()=>{}); addToMistake(qData.id);
+                audioFail.play().catch(()=>{});
+                addToMistake(qData.id);
             }
+            
             loadStandardQuestion();
         }
 
-        function nextQuestion() { quizState.currentIndex++; loadStandardQuestion(); }
+        function nextQuestion() {
+            quizState.currentIndex++;
+            loadStandardQuestion();
+        }
 
         function finishStandardQuiz() {
-            window.saveData(getUserKey('standardProgress'), null);
+            localStorage.removeItem(getUserKey('standardProgress')); 
             document.getElementById('quiz-content').style.display = 'none';
             document.getElementById('score-box').style.display = 'block';
             
             const finalScore = Math.round((quizState.score / currentQuizData.length) * 100);
             document.getElementById('final-score').innerText = finalScore;
-            document.getElementById('final-name').innerText = window.userName;
+            document.getElementById('final-name').innerText = userName;
             
-            let progress = window.getData(getUserKey('quizProgress')) || { maxLevel: 1, scores: {} };
+            let progress = JSON.parse(localStorage.getItem(getUserKey('quizProgress'))) || { maxLevel: 1, scores: {} };
             let oldScore = progress.scores[quizState.level] || 0;
             if(finalScore > oldScore) progress.scores[quizState.level] = finalScore;
             
             let unlocked = false;
             if(finalScore >= 70 && quizState.level === progress.maxLevel && quizState.level < LEVEL_CONFIG.length) {
-                progress.maxLevel++; unlocked = true;
+                progress.maxLevel++;
+                unlocked = true;
             }
-            window.saveData(getUserKey('quizProgress'), progress);
+            localStorage.setItem(getUserKey('quizProgress'), JSON.stringify(progress));
             
             document.getElementById('unlock-msg').style.display = unlocked ? 'block' : 'none';
             document.getElementById('new-card-alert').style.display = (finalScore >= 70 && oldScore < 70) ? 'block' : 'none';
@@ -1180,31 +1075,47 @@
             else if(finalScore >= 90) cmt = "太強了！";
             else if(finalScore >= 70) cmt = "實驗成功！";
             document.getElementById('score-comment').innerText = cmt;
+
             saveHistory(finalScore, `實驗 ${quizState.level}`);
         }
 
-        // --- Waterfall Mode ---
+        // --- 瀑布流刷題模式 (Waterfall Mode) ---
         function startWaterfallQuiz(mode, forceNew = false) {
             const savedKey = getUserKey('waterfallProgress_' + mode);
+            
             if(!forceNew) {
-                const saved = window.getData(savedKey);
-                if(saved) { quizState = saved; renderWaterfallUI(); return; }
+                const saved = JSON.parse(localStorage.getItem(savedKey));
+                if(saved) {
+                    quizState = saved;
+                    renderWaterfallUI();
+                    return;
+                }
             }
-            quizState = { mode: mode, score: 0, answers: {}, locked: {}, qIds: [] };
+
+            quizState = {
+                mode: mode,
+                score: 0,
+                answers: {},
+                locked: {},
+                qIds: []
+            };
+
             if(mode === 'speed') {
                 quizState.qIds = allQuestions.map(q => q.id);
                 document.getElementById('wf-mode-title').innerText = "全範圍刷題";
                 document.getElementById('wf-mode-icon').innerText = "⚡";
             } else if(mode === 'mistake') {
-                quizState.qIds = window.getData(getUserKey('mistakeBank')) || [];
+                quizState.qIds = JSON.parse(localStorage.getItem(getUserKey('mistakeBank'))) || [];
                 document.getElementById('wf-mode-title').innerText = "錯題挑戰";
                 document.getElementById('wf-mode-icon').innerText = "📕";
             } else if(mode === 'favorite') {
-                quizState.qIds = window.getData(getUserKey('favoriteBank')) || [];
+                quizState.qIds = JSON.parse(localStorage.getItem(getUserKey('favoriteBank'))) || [];
                 document.getElementById('wf-mode-title').innerText = "我的收藏";
                 document.getElementById('wf-mode-icon').innerText = "⭐";
             }
+
             if(quizState.qIds.length === 0) return alert("目前沒有題目！");
+            
             renderWaterfallUI();
         }
 
@@ -1215,7 +1126,9 @@
             
             const list = document.getElementById('waterfall-list');
             list.innerHTML = "";
+            
             const questions = allQuestions.filter(q => quizState.qIds.includes(q.id));
+
             questions.forEach((q, idx) => {
                 const card = document.createElement('div');
                 card.className = 'waterfall-card';
@@ -1225,25 +1138,38 @@
                 const isFav = isFavorite(q.id);
                 const canDelete = (quizState.mode === 'mistake' || quizState.mode === 'favorite');
                 
-                let actionsHtml = `<div class="card-actions">${canDelete ? `<span class="action-icon trash" onclick="deleteCardItem('${q.id}')">🗑️</span>` : ''}<span class="action-icon ${isFav ? 'active' : ''}" onclick="toggleWaterfallFav(this, '${q.id}')">${isFav ? '♥&#xFE0E;' : '♡&#xFE0E;'}</span></div>`;
+                let actionsHtml = `
+                    <div class="card-actions">
+                         ${canDelete ? `<span class="action-icon trash" onclick="deleteCardItem('${q.id}')">🗑️</span>` : ''}
+                        <span class="action-icon ${isFav ? 'active' : ''}" onclick="toggleWaterfallFav(this, '${q.id}')">${isFav ? '♥&#xFE0E;' : '♡&#xFE0E;'}</span>
+                    </div>
+                `;
+                
                 let imgHtml = q.image ? `<img src="${q.image}" class="wf-img">` : '';
                 let qTextHtml = `<div class="wf-question-text"><span class="wf-q-badge">#${idx+1}</span>${q.question}</div>`;
+
                 let optionsHtml = '<div class="wf-options">';
                 q.options.forEach(opt => {
-                    let btnClass = 'wf-opt-btn'; let disabled = '';
+                    let btnClass = 'wf-opt-btn';
+                    let disabled = '';
+                    
                     if(quizState.locked[q.id]) {
                         disabled = 'disabled';
                         const correct = q.answer.substring(0,3);
                         const val = opt.substring(0,3);
                         const userSel = quizState.answers[q.id] ? quizState.answers[q.id].substring(0,3) : null;
+                        
                         if(val === correct) btnClass += ' correct';
                         if(userSel === val && userSel !== correct) btnClass += ' wrong';
                     }
+                    
                     optionsHtml += `<button class="${btnClass}" ${disabled} onclick="handleWaterfallAnswer('${q.id}', '${opt}')">${opt}</button>`;
                 });
                 optionsHtml += '</div>';
+
                 let expStyle = quizState.locked[q.id] ? 'display:block' : '';
                 let expHtml = `<div class="wf-explanation" style="${expStyle}"><strong>💡 解析：</strong>${q.explanation||'略'}</div>`;
+
                 card.innerHTML = actionsHtml + qTextHtml + imgHtml + optionsHtml + expHtml;
                 list.appendChild(card);
             });
@@ -1252,13 +1178,24 @@
 
         function handleWaterfallAnswer(qId, option) {
             if(quizState.locked[qId]) return;
+            
             const qData = allQuestions.find(q => q.id === qId);
-            quizState.answers[qId] = option; quizState.locked[qId] = true;
-            const correct = qData.answer.substring(0,3); const selected = option.substring(0,3);
+            quizState.answers[qId] = option;
+            quizState.locked[qId] = true;
+            
+            const correct = qData.answer.substring(0,3);
+            const selected = option.substring(0,3);
+            
             if(selected === correct) {
-                quizState.score++; audioCorrect.play().catch(()=>{}); confetti({ particleCount: 50, origin: { y: 0.8 } });
-            } else { audioFail.play().catch(()=>{}); addToMistake(qId); }
-            window.saveData(getUserKey('waterfallProgress_' + quizState.mode), quizState);
+                quizState.score++;
+                audioCorrect.play().catch(()=>{});
+                confetti({ particleCount: 50, origin: { y: 0.8 } });
+            } else {
+                audioFail.play().catch(()=>{});
+                addToMistake(qId);
+            }
+            
+            localStorage.setItem(getUserKey('waterfallProgress_' + quizState.mode), JSON.stringify(quizState));
             updateWaterfallStats();
             
             const card = document.getElementById(`card-${qId}`);
@@ -1276,76 +1213,106 @@
         }
 
         function updateWaterfallStats() {
-            const answered = Object.keys(quizState.locked).length; const total = quizState.qIds.length;
+            const answered = Object.keys(quizState.locked).length;
+            const total = quizState.qIds.length;
             document.getElementById('wf-answered').innerText = answered;
             document.getElementById('wf-total').innerText = total;
             document.getElementById('wf-score').innerText = quizState.score;
         }
 
         function addToMistake(id) {
-            let list = window.getData(getUserKey('mistakeBank')) || [];
+            let list = JSON.parse(localStorage.getItem(getUserKey('mistakeBank'))) || [];
             if(!list.includes(id)) {
-                list.push(id); window.saveData(getUserKey('mistakeBank'), list);
+                list.push(id);
+                localStorage.setItem(getUserKey('mistakeBank'), JSON.stringify(list));
                 updateDashboardTools();
             }
         }
 
         function isFavorite(id) {
-            let list = window.getData(getUserKey('favoriteBank')) || [];
+            let list = JSON.parse(localStorage.getItem(getUserKey('favoriteBank'))) || [];
             return list.includes(id);
         }
 
         function toggleWaterfallFav(btn, id) {
-            let list = window.getData(getUserKey('favoriteBank')) || [];
+            let list = JSON.parse(localStorage.getItem(getUserKey('favoriteBank'))) || [];
             if(list.includes(id)) {
-                list = list.filter(x => x !== id); btn.classList.remove('active'); btn.innerHTML = '♡&#xFE0E;';
+                list = list.filter(x => x !== id);
+                btn.classList.remove('active');
+                btn.innerHTML = '♡&#xFE0E;';
             } else {
-                list.push(id); btn.classList.add('active'); btn.innerHTML = '♥&#xFE0E;';
+                list.push(id);
+                btn.classList.add('active');
+                btn.innerHTML = '♥&#xFE0E;';
             }
-            window.saveData(getUserKey('favoriteBank'), list);
+            localStorage.setItem(getUserKey('favoriteBank'), JSON.stringify(list));
             updateDashboardTools();
         }
 
-        window.updateDashboardTools = function() {
-            let mList = window.getData(getUserKey('mistakeBank')) || [];
-            let fList = window.getData(getUserKey('favoriteBank')) || [];
+        function updateDashboardTools() {
+            let mList = JSON.parse(localStorage.getItem(getUserKey('mistakeBank'))) || [];
+            let fList = JSON.parse(localStorage.getItem(getUserKey('favoriteBank'))) || [];
+            
             const btnM = document.getElementById('btn-mistake');
             const btnF = document.getElementById('btn-favorite');
+            
             if(mList.length > 0) {
-                btnM.style.display = 'inline-block'; document.getElementById('mistake-count').innerText = mList.length;
+                btnM.style.display = 'inline-block';
+                document.getElementById('mistake-count').innerText = mList.length;
             } else btnM.style.display = 'none';
+
             if(fList.length > 0) {
-                btnF.style.display = 'inline-block'; document.getElementById('favorite-count').innerText = fList.length;
+                btnF.style.display = 'inline-block';
+                document.getElementById('favorite-count').innerText = fList.length;
             } else btnF.style.display = 'none';
         }
 
         function deleteCardItem(id) {
             if(!confirm("確定要從此清單中刪除這題嗎？")) return;
             if(!confirm("再次確認：刪除後將無法恢復！")) return;
+            
             if(quizState.mode === 'mistake') {
-                let list = window.getData(getUserKey('mistakeBank')) || [];
-                list = list.filter(x => x !== id); window.saveData(getUserKey('mistakeBank'), list); quizState.qIds = list;
+                let list = JSON.parse(localStorage.getItem(getUserKey('mistakeBank'))) || [];
+                list = list.filter(x => x !== id);
+                localStorage.setItem(getUserKey('mistakeBank'), JSON.stringify(list));
+                quizState.qIds = list;
             } else if (quizState.mode === 'favorite') {
-                let list = window.getData(getUserKey('favoriteBank')) || [];
-                list = list.filter(x => x !== id); window.saveData(getUserKey('favoriteBank'), list); quizState.qIds = list;
+                let list = JSON.parse(localStorage.getItem(getUserKey('favoriteBank'))) || [];
+                list = list.filter(x => x !== id);
+                localStorage.setItem(getUserKey('favoriteBank'), JSON.stringify(list));
+                quizState.qIds = list;
             }
-            const card = document.getElementById(`card-${id}`); if(card) card.remove();
-            window.saveData(getUserKey('waterfallProgress_' + quizState.mode), quizState);
-            updateWaterfallStats(); updateDashboardTools();
-            if(quizState.qIds.length === 0) { alert("清單已空！"); exitQuiz(); }
+
+            const card = document.getElementById(`card-${id}`);
+            if(card) card.remove();
+            
+            localStorage.setItem(getUserKey('waterfallProgress_' + quizState.mode), JSON.stringify(quizState));
+            updateWaterfallStats();
+            updateDashboardTools();
+            
+            if(quizState.qIds.length === 0) {
+                alert("清單已空！");
+                exitQuiz();
+            }
         }
 
         function toggleStandardFavorite() {
             if(!currentQuizData[quizState.currentIndex]) return;
             const id = currentQuizData[quizState.currentIndex].id;
-            let list = window.getData(getUserKey('favoriteBank')) || [];
-            if(list.includes(id)) { list = list.filter(x => x !== id); } else { list.push(id); }
-            window.saveData(getUserKey('favoriteBank'), list);
-            updateStandardFavoriteUI(id); updateDashboardTools();
+            let list = JSON.parse(localStorage.getItem(getUserKey('favoriteBank'))) || [];
+            
+            if(list.includes(id)) {
+                list = list.filter(x => x !== id);
+            } else {
+                list.push(id);
+            }
+            localStorage.setItem(getUserKey('favoriteBank'), JSON.stringify(list));
+            updateStandardFavoriteUI(id);
+            updateDashboardTools();
         }
 
         function updateStandardFavoriteUI(id) {
-            let list = window.getData(getUserKey('favoriteBank')) || [];
+            let list = JSON.parse(localStorage.getItem(getUserKey('favoriteBank'))) || [];
             const btn = document.getElementById('std-fav-btn');
             if(list.includes(id)) {
                 btn.innerText = '★'; btn.style.background = 'var(--favorite-color)'; btn.style.color = 'white';
@@ -1367,52 +1334,73 @@
         function restartQuiz() {
             if (!confirm("確定要重新開始嗎？所有進度將被清除！")) return;
             if (!confirm("再次確認：清除後無法復原，確定重新開始？")) return;
+
             if (quizState.mode === 'standard') {
-                window.saveData(getUserKey('standardProgress'), null); startStandardQuiz(quizState.level, true); 
+                localStorage.removeItem(getUserKey('standardProgress'));
+                startStandardQuiz(quizState.level, true); 
             } else {
-                window.saveData(getUserKey('waterfallProgress_' + quizState.mode), null); startWaterfallQuiz(quizState.mode, true);
+                localStorage.removeItem(getUserKey('waterfallProgress_' + quizState.mode));
+                startWaterfallQuiz(quizState.mode, true);
             }
         }
 
         function saveHistory(score, modeTitle) {
-            let history = window.getData(getUserKey('quizHistory')) || [];
-            history.push({ date: new Date().toLocaleString(), score: score, mode: modeTitle });
-            window.saveData(getUserKey('quizHistory'), history);
+            let history = JSON.parse(localStorage.getItem(getUserKey('quizHistory'))) || [];
+            history.push({
+                date: new Date().toLocaleString(),
+                score: score,
+                mode: modeTitle
+            });
+            localStorage.setItem(getUserKey('quizHistory'), JSON.stringify(history));
         }
         
         function showHistory() {
-            hideAllScreens(); document.getElementById('history-screen').style.display = 'block';
+            hideAllScreens();
+            document.getElementById('history-screen').style.display = 'block';
             const list = document.getElementById('history-list');
-            let history = window.getData(getUserKey('quizHistory')) || [];
+            let history = JSON.parse(localStorage.getItem(getUserKey('quizHistory'))) || [];
             list.innerHTML = history.reverse().map(h => `
                 <li style="background:#fff; padding:15px; border-bottom:1px solid #eee; margin-bottom:10px; border-radius:5px;">
-                    <strong>${h.mode}</strong> - <span style="color:${h.score>=70?'green':'red'}">${h.score}分</span><br><small>${h.date}</small>
-                </li>`).join('') || '<p style="text-align:center">無紀錄</p>';
+                    <strong>${h.mode}</strong> - <span style="color:${h.score>=70?'green':'red'}">${h.score}分</span>
+                    <br><small>${h.date}</small>
+                </li>
+            `).join('') || '<p style="text-align:center">無紀錄</p>';
         }
 
         function showCollection() {
-            hideAllScreens(); document.getElementById('collection-screen').style.display = 'block';
-            const grid = document.getElementById('collection-grid'); grid.innerHTML = "";
-            const progress = window.getData(getUserKey('quizProgress')) || { scores: {} };
+            hideAllScreens();
+            document.getElementById('collection-screen').style.display = 'block';
+            const grid = document.getElementById('collection-grid');
+            grid.innerHTML = "";
+            const progress = JSON.parse(localStorage.getItem(getUserKey('quizProgress'))) || { scores: {} };
+            
             const scores = progress.scores || {};
+
             for(let i=1; i<=LEVEL_CONFIG.length; i++) {
-                const num = i<10?`0${i}`:`${i}`; const unlocked = (scores[i] >= 70);
+                const num = i<10?`0${i}`:`${i}`;
+                const unlocked = (scores[i] >= 70);
                 const item = document.createElement('div');
                 item.className = `card-item ${unlocked?'':'locked'}`;
+                
                 if(unlocked) {
                     item.innerHTML = `<img src="images/card_${num}.jpg">`;
                     item.onclick = () => openCardModal(`images/card_${num}.jpg`, `元素卡 #${num}`);
-                } else { item.innerHTML = `<span style="font-size:2em;">🔒</span><br>實驗 ${i}`; }
+                } else {
+                    item.innerHTML = `<span style="font-size:2em;">🔒</span><br>實驗 ${i}`;
+                }
                 grid.appendChild(item);
             }
         }
 
         function openCardModal(src, title) {
-            document.getElementById('modal-img').src = src; document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-img').src = src;
+            document.getElementById('modal-title').innerText = title;
             document.getElementById('card-modal').style.display = 'flex';
         }
         function closeCardModal() { document.getElementById('card-modal').style.display = 'none'; }
+        
         function logout() { location.reload(); }
+
     </script>
 </body>
 </html>
